@@ -1,0 +1,93 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xmlns:context="http://www.springframework.org/schema/context"
+    xmlns:util="http://www.springframework.org/schema/util"
+    xmlns:mvc="http://www.springframework.org/schema/mvc"
+    xmlns:tx="http://www.springframework.org/schema/tx"
+    xmlns:aop="http://www.springframework.org/schema/aop"
+    xmlns:task="http://www.springframework.org/schema/task"
+    xsi:schemaLocation="
+    	http://www.springframework.org/schema/beans 
+    	http://www.springframework.org/schema/beans/spring-beans-3.0.xsd
+    	http://www.springframework.org/schema/context 
+        http://www.springframework.org/schema/context/spring-context-3.0.xsd
+        http://www.springframework.org/schema/util 
+    	http://www.springframework.org/schema/util/spring-util-3.0.xsd
+    	http://www.springframework.org/schema/mvc 
+    	http://www.springframework.org/schema/mvc/spring-mvc-3.0.xsd
+    	http://www.springframework.org/schema/tx 
+    	http://www.springframework.org/schema/tx/spring-tx-3.0.xsd
+    	http://www.springframework.org/schema/task
+   		http://www.springframework.org/schema/task/spring-task-3.0.xsd">
+    	
+    <context:component-scan base-package="com.examples.app.controller"/>
+ 	<context:component-scan base-package="com.examples.service"/>
+ 	<context:component-scan base-package="com.examples.dao"/>
+ 	
+	<mvc:resources mapping="/resources/**" location="/resources/" />
+	<mvc:view-controller path="/" view-name="buyer/list"/>
+	
+	<mvc:annotation-driven/>
+   	<mvc:default-servlet-handler/>
+   	
+   	<bean class="org.springframework.web.servlet.view.ContentNegotiatingViewResolver">
+		<property name="mediaTypes">
+			<map>
+				<entry key="html" value="text/html"/>
+				<entry key="json" value="application/json"/>
+			</map>
+		</property>
+		<property name="viewResolvers">
+			<list>
+				<bean class="org.springframework.web.servlet.view.BeanNameViewResolver"/>
+				<bean class="org.springframework.web.servlet.view.InternalResourceViewResolver">
+					<property name="prefix" value="/WEB-INF/views/"/>
+					<property name="suffix" value=".jsp"/>
+				</bean>
+			</list>
+		</property>
+	</bean>
+	
+   	<!-- Databases -->
+   	
+   	<bean id="productionDataSource" class="org.apache.commons.dbcp.BasicDataSource">
+		<property name="driverClassName" value="com.mysql.jdbc.Driver"/>
+		<property name="url" value="jdbc:mysql://localhost:3306/example"/>
+		<property name="username" value="user"/>
+		<property name="password" value="pass"/>
+	</bean>
+	
+   	<bean id="debugDatasource" class="org.apache.commons.dbcp.BasicDataSource">
+		<property name="driverClassName" value="com.mysql.jdbc.Driver"/>
+		<property name="url" value="jdbc:mysql://localhost:3306/example_debug"/>
+		<property name="username" value="user"/>
+		<property name="password" value="pass"/>
+	</bean>
+
+   	<bean id="customDataSource" class="com.examples.datasource.RoutingDataStore">
+   		<property name="targetDataSources">
+   			<map key-type="com.examples.datasource.Datasource">
+   				<entry key="PRODUCTION" value-ref="productionDataSource"></entry>
+   				<entry key="DEBUG" value-ref="debugDatasource"></entry>
+   			</map>
+   		</property>
+   		<property name="defaultTargetDataSource" ref="productionDataSource"></property>
+   	</bean>
+   	
+   	<bean id="entityManagerFactory" class="org.springframework.orm.jpa.LocalContainerEntityManagerFactoryBean">
+    	<property name="persistenceUnitName" value="ExamplePU" />
+    	<property name="dataSource" ref="customDataSource" />
+    	
+    	<property name="jpaVendorAdapter">
+    		<bean class="org.springframework.orm.jpa.vendor.HibernateJpaVendorAdapter" />
+    	</property>
+  	</bean>
+  	
+  	<bean id="transactionManager" class="org.springframework.orm.jpa.JpaTransactionManager">
+    	<property name="entityManagerFactory" ref="entityManagerFactory"/>
+  	</bean>
+
+  	<tx:annotation-driven transaction-manager="transactionManager"/>
+</beans>
